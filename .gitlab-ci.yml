@@ -1,0 +1,57 @@
+stages:
+  - build
+  - style
+  - test
+  - deploy
+
+building: 
+  stage: build
+  script: 
+    - cd src/cat
+    - make s21_cat
+    - cd ../grep
+    - make s21_grep
+  after_script:
+    - bash src/telegram_bot.sh
+  artifacts:
+    paths:
+      - src/cat/s21_cat
+      - src/grep/s21_grep
+    expire_in: 30 days
+
+style: 
+  stage: style
+  script: 
+    - cd src/cat
+    - clang-format -style=Google
+    - clang-format -i *.c *.h
+    - git diff --exit-code
+    - cd ../grep
+    - clang-format -style=Google
+    - clang-format -i *.c *.h
+    - git diff --exit-code
+  after_script:
+    - bash src/telegram_bot.sh
+
+test: 
+  stage: test
+  script: 
+    - cd src/cat
+    - make test
+    - cd ../grep
+    - make test
+  after_script:
+    - bash src/telegram_bot.sh
+    # only:
+    # - develop
+
+deploy_job:
+  stage: deploy
+  script:
+    - bash src/deploy.sh
+  when: manual
+  after_script:
+    - bash src/telegram_bot.sh 
+  # allow_failure: false
+  # only:
+  #   - develop›
